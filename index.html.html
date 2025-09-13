@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>150 Printable Bingo Cards</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+        background-color: #f0f0f0;
+      }
+      .controls {
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .print-button {
+        padding: 12px 24px;
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+        background-color: #007bff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      .print-button:hover {
+        background-color: #0056b3;
+      }
+      .cards-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 25px;
+      }
+      .bingo-card {
+        display: inline-block;
+        border: 2px solid #333;
+        padding: 5px;
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        page-break-inside: avoid; /* Prevents cards from splitting during print */
+      }
+      .card-title {
+        font-size: 14px;
+        font-weight: bold;
+        color: #555;
+        text-align: center;
+        margin-bottom: 5px;
+      }
+      table {
+        border-collapse: separate;
+        border-spacing: 3px;
+      }
+      th,
+      td {
+        width: 50px;
+        height: 50px;
+        text-align: center;
+        border-radius: 8px;
+        font-size: 20px;
+        font-weight: bold;
+        vertical-align: middle;
+      }
+      th {
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+      .header-B { background-color: #3b82f6; } /* Blue */
+      .header-I { background-color: #ef4444; } /* Red */
+      .header-N { background-color: #6b7280; } /* Gray */
+      .header-G { background-color: #22c55e; } /* Green */
+      .header-O { background-color: #f97316; } /* Orange */
+      td {
+        background-color: #e5e7eb; /* Light Gray */
+        color: #16a34a; /* Green */
+      }
+      .free-space {
+        background-color: #ffd700;
+        font-size: 16px;
+        color: #374151; /* Dark Gray text to override green */
+      }
+      @media print {
+        .controls {
+          display: none;
+        }
+        body {
+          padding: 0;
+          background-color: #fff;
+        }
+        .cards-container {
+          gap: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <button class="print-button" onclick="window.print()">
+        Print All 150 Cards
+      </button>
+    </div>
+    <div id="cards-container" class="cards-container"></div>
+
+    <script>
+      const RANGES = {
+        B: { min: 1, max: 15, size: 5 },
+        I: { min: 16, max: 30, size: 5 },
+        N: { min: 31, max: 45, size: 4 }, // 4 numbers + FREE space
+        G: { min: 46, max: 60, size: 5 },
+        O: { min: 61, max: 75, size: 5 },
+      };
+
+      // Generates a specified count of unique random numbers within a range
+      function generateColumn(min, max, count) {
+        const numbers = [];
+        for (let i = min; i <= max; i++) {
+          numbers.push(i);
+        }
+
+        // Shuffle the array
+        for (let i = numbers.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+        }
+
+        return numbers.slice(0, count);
+      }
+
+      // Generates the full set of numbers for one Bingo card
+      function generateCardNumbers() {
+        const card = {};
+        for (const col in RANGES) {
+          const { min, max, size } = RANGES[col];
+          card[col] = generateColumn(min, max, size);
+        }
+        return card;
+      }
+
+      // Creates the HTML element for a single card
+      function createCardElement(cardData, cardId) {
+        const cardDiv = document.createElement("div");
+        cardDiv.className = "bingo-card";
+        cardDiv.id = `card-${cardId}`;
+
+        const table = document.createElement("table");
+        const thead = table.createTHead();
+        const tbody = table.createTBody();
+
+        // Header Row
+        const headerRow = thead.insertRow();
+        Object.keys(RANGES).forEach((letter) => {
+          const th = document.createElement("th");
+          th.textContent = letter;
+          th.classList.add(`header-${letter}`);
+          headerRow.appendChild(th);
+        });
+
+        // Number Rows
+        for (let i = 0; i < 5; i++) {
+          const row = tbody.insertRow();
+          Object.keys(RANGES).forEach((letter) => {
+            const cell = row.insertCell();
+            if (letter === "N" && i === 2) {
+              cell.textContent = "FREE";
+              cell.className = "free-space";
+            } else {
+              const colData = cardData[letter];
+              // Adjust index for 'N' column because it has only 4 numbers
+              const numIndex = letter === "N" && i > 2 ? i - 1 : i;
+              cell.textContent = colData[numIndex];
+            }
+          });
+        }
+        
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'card-title';
+        titleDiv.textContent = `Card #${cardId}`;
+
+        cardDiv.appendChild(titleDiv);
+        cardDiv.appendChild(table);
+        return cardDiv;
+      }
+
+      // Generate and display 150 unique cards
+      const container = document.getElementById("cards-container");
+      const generatedCards = new Set();
+      let cardId = 1;
+
+      while (generatedCards.size < 150) {
+        const cardData = generateCardNumbers();
+        const cardIdentifier = JSON.stringify(cardData); // Use a string representation to check for uniqueness
+
+        if (!generatedCards.has(cardIdentifier)) {
+          generatedCards.add(cardIdentifier);
+          const cardElement = createCardElement(cardData, cardId++);
+          container.appendChild(cardElement);
+        }
+      }
+    </script>
+  </body>
+</html>
